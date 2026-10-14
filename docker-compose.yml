@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:14-alpine
+    container_name: edward-growth-db
+    environment:
+      POSTGRES_DB: edward_growth
+      POSTGRES_USER: edward
+      POSTGRES_PASSWORD: edward123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/schema_extended.sql:/docker-entrypoint-initdb.d/02-schema-extended.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U edward"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - edward-net
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: edward-growth-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - edward-net
+
+  # FastAPI Application
+  api:
+    build: ./backend
+    container_name: edward-growth-api
+    env_file: ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+psycopg://edward:edward123@postgres:5432/edward_growth
+      REDIS_URL: redis://redis:6379/0
+      FEISHU_APP_ID: ${FEISHU_APP_ID}
+      FEISHU_APP_SECRET: ${FEISHU_APP_SECRET}
+      FEISHU_USER_OPEN_ID: ${FEISHU_USER_OPEN_ID}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - api_logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - edward-net
+
+  # Frontend (Nginx)
+  frontend:
+    build: ./frontend
+    container_name: edward-growth-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - edward-net
+
+volumes:
+  postgres_data:
+  redis_data:
+  api_logs:
+
+networks:
+  edward-net:
+    driver: bridge

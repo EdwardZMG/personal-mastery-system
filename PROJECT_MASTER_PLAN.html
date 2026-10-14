@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Edward 个人成长成功系统 — 总体规划</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --primary: #1890ff;
+  --success: #52c41a;
+  --warning: #faad14;
+  --danger: #ff4d4f;
+  --bg: #f0f2f5;
+  --card-bg: #fff;
+  --text: #333;
+  --text-secondary: #666;
+  --border: #e8e8e8;
+  --sidebar-w: 260px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+/* Sidebar */
+.sidebar { position:fixed; left:0; top:0; bottom:0; width:var(--sidebar-w); background:linear-gradient(180deg,#001529 0%,#002140 100%); color:#fff; overflow-y:auto; z-index:100; }
+.sidebar-header { padding:24px 20px; border-bottom:1px solid rgba(255,255,255,0.1); }
+.sidebar-header h2 { font-size:16px; font-weight:600; color:#fff; }
+.sidebar-header p { font-size:12px; color:rgba(255,255,255,0.5); margin-top:4px; }
+.nav-group { padding:12px 0; }
+.nav-group-title { padding:8px 20px; font-size:11px; text-transform:uppercase; color:rgba(255,255,255,0.35); letter-spacing:1px; }
+.nav-item { display:flex; align-items:center; padding:10px 20px; color:rgba(255,255,255,0.65); cursor:pointer; transition:all 0.2s; font-size:14px; text-decoration:none; }
+.nav-item:hover { color:#fff; background:rgba(255,255,255,0.06); }
+.nav-item.active { color:#fff; background:var(--primary); }
+.nav-item .icon { width:20px; margin-right:10px; text-align:center; }
+
+/* Main */
+.main { margin-left:var(--sidebar-w); padding:24px 32px; min-height:100vh; }
+
+/* Header */
+.page-header { margin-bottom:24px; }
+.page-header h1 { font-size:24px; font-weight:600; }
+.page-header .subtitle { color:var(--text-secondary); margin-top:4px; }
+
+/* Score Cards */
+.score-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-bottom:24px; }
+.score-card { background:var(--card-bg); border-radius:8px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+.score-card .label { font-size:13px; color:var(--text-secondary); margin-bottom:8px; }
+.score-card .score { font-size:32px; font-weight:700; }
+.score-card .score.low { color:var(--danger); }
+.score-card .score.mid { color:var(--warning); }
+.score-card .score.high { color:var(--success); }
+.score-card .detail { font-size:12px; color:var(--text-secondary); margin-top:4px; }
+
+/* Sections */
+.section { background:var(--card-bg); border-radius:8px; padding:24px; margin-bottom:20px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+.section-title { font-size:18px; font-weight:600; margin-bottom:16px; padding-bottom:12px; border-bottom:2px solid var(--primary); display:inline-block; }
+
+/* Architecture Diagram */
+.arch-diagram { background:#f8fafc; border-radius:8px; padding:20px; overflow-x:auto; }
+.arch-layer { display:flex; gap:12px; margin-bottom:12px; align-items:stretch; }
+.arch-layer-label { writing-mode:vertical-rl; text-orientation:mixed; background:var(--primary); color:#fff; padding:8px 6px; border-radius:4px; font-size:11px; font-weight:600; min-width:28px; display:flex; align-items:center; justify-content:center; }
+.arch-layer-content { flex:1; display:flex; gap:8px; flex-wrap:wrap; }
+.arch-box { background:#fff; border:1px solid var(--border); border-radius:6px; padding:10px 14px; font-size:12px; min-width:120px; text-align:center; }
+.arch-box .box-title { font-weight:600; color:var(--primary); margin-bottom:2px; }
+.arch-box .box-desc { color:var(--text-secondary); font-size:11px; }
+.arch-box.feishu { border-color:#3370ff; background:#f0f5ff; }
+.arch-box.db { border-color:#52c41a; background:#f6ffed; }
+
+/* Docker Diagram */
+.docker-diagram { display:flex; gap:16px; flex-wrap:wrap; justify-content:center; padding:20px; }
+.docker-container { border:2px solid var(--border); border-radius:8px; padding:16px; min-width:160px; text-align:center; position:relative; }
+.docker-container .container-name { position:absolute; top:-10px; left:12px; background:var(--bg); padding:0 8px; font-size:11px; color:var(--text-secondary); }
+.docker-container .container-icon { font-size:32px; margin-bottom:8px; }
+.docker-container .container-port { display:inline-block; background:var(--primary); color:#fff; padding:2px 8px; border-radius:10px; font-size:11px; margin-top:6px; }
+.docker-arrow { display:flex; align-items:center; font-size:24px; color:var(--primary); }
+
+/* Page Tree */
+.page-tree { font-size:13px; }
+.tree-module { margin-bottom:12px; }
+.tree-module-header { display:flex; align-items:center; gap:8px; padding:8px 12px; background:#f0f5ff; border-radius:6px; cursor:pointer; font-weight:600; color:var(--primary); }
+.tree-module-header:hover { background:#e6f7ff; }
+.tree-pages { padding-left:32px; margin-top:4px; }
+.tree-page { padding:4px 0; color:var(--text-secondary); font-size:12px; }
+.tree-page .route { color:#999; font-family:monospace; font-size:11px; margin-left:8px; }
+
+/* API Matrix */
+.api-table { width:100%; border-collapse:collapse; font-size:13px; }
+.api-table th { background:#fafafa; padding:10px 12px; text-align:left; border-bottom:2px solid var(--border); font-weight:600; }
+.api-table td { padding:8px 12px; border-bottom:1px solid var(--border); }
+.api-table tr:hover { background:#fafafa; }
+.api-method { display:inline-block; padding:2px 8px; border-radius:3px; font-size:11px; font-weight:600; color:#fff; min-width:48px; text-align:center; }
+.api-method.get { background:#52c41a; }
+.api-method.post { background:#1890ff; }
+.api-method.put { background:#faad14; }
+.api-method.delete { background:#ff4d4f; }
+.api-status { display:inline-block; padding:2px 6px; border-radius:3px; font-size:11px; }
+.api-status.ok { background:#f6ffed; color:#52c41a; }
+.api-status.bug { background:#fff2f0; color:#ff4d4f; }
+.api-status.new { background:#e6f7ff; color:#1890ff; }
+
+/* Timeline */
+.timeline { position:relative; padding-left:24px; }
+.timeline::before { content:''; position:absolute; left:8px; top:0; bottom:0; width:2px; background:var(--border); }
+.timeline-phase { position:relative; margin-bottom:20px; }
+.timeline-phase::before { content:''; position:absolute; left:-20px; top:6px; width:12px; height:12px; border-radius:50%; border:2px solid var(--primary); background:#fff; }
+.timeline-phase.p0::before { background:var(--danger); border-color:var(--danger); }
+.timeline-phase.p1::before { background:var(--warning); border-color:var(--warning); }
+.timeline-phase.p2::before { background:var(--success); border-color:var(--success); }
+.phase-title { font-weight:600; font-size:15px; }
+.phase-time { font-size:12px; color:var(--text-secondary); }
+.phase-tasks { margin-top:8px; padding-left:16px; }
+.phase-tasks li { font-size:13px; color:var(--text-secondary); margin-bottom:4px; }
+
+/* Bug List */
+.bug-card { border-left:4px solid var(--danger); background:#fff2f0; padding:12px 16px; border-radius:0 6px 6px 0; margin-bottom:8px; }
+.bug-card .bug-title { font-weight:600; color:var(--danger); font-size:13px; }
+.bug-card .bug-detail { font-size:12px; color:var(--text-secondary); margin-top:4px; }
+.bug-card .bug-file { font-family:monospace; background:#fff; padding:1px 6px; border-radius:3px; font-size:11px; }
+
+/* Stats */
+.stats-row { display:flex; gap:24px; flex-wrap:wrap; margin-bottom:16px; }
+.stat-item { text-align:center; }
+.stat-number { font-size:28px; font-weight:700; color:var(--primary); }
+.stat-label { font-size:12px; color:var(--text-secondary); }
+
+/* Responsive */
+@media (max-width:768px) {
+  .sidebar { display:none; }
+  .main { margin-left:0; padding:16px; }
+}
+
+/* Print */
+@media print {
+  .sidebar { display:none; }
+  .main { margin-left:0; }
+  .section { break-inside:avoid; }
+}
+</style>
+</head>
+<body>
+
+<!-- Sidebar Navigation -->
+<div class="sidebar">
+  <div class="sidebar-header">
+    <h2>Edward Growth System</h2>
+    <p>Master Plan v3.0 | 2026-10-12</p>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">Overview</div>
+    <a class="nav-item active" href="#overview"><span class="icon">&#9673;</span> 项目总览</a>
+    <a class="nav-item" href="#scores"><span class="icon">&#9733;</span> 专家评分</a>
+    <a class="nav-item" href="#bugs"><span class="icon">&#9888;</span> 关键BUG</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">Architecture</div>
+    <a class="nav-item" href="#architecture"><span class="icon">&#9638;</span> 系统架构</a>
+    <a class="nav-item" href="#docker"><span class="icon">&#9881;</span> Docker部署</a>
+    <a class="nav-item" href="#structure"><span class="icon">&#9776;</span> 项目结构</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">Frontend</div>
+    <a class="nav-item" href="#pages"><span class="icon">&#9635;</span> 页面结构</a>
+    <a class="nav-item" href="#tech"><span class="icon">&#9830;</span> 技术选型</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">Backend</div>
+    <a class="nav-item" href="#api"><span class="icon">&#8644;</span> API矩阵</a>
+  </div>
+  <div class="nav-group">
+    <div class="nav-group-title">Execution</div>
+    <a class="nav-item" href="#timeline"><span class="icon">&#10148;</span> 实施路线</a>
+    <a class="nav-item" href="#deliverables"><span class="icon">&#10003;</span> 交付清单</a>
+  </div>
+</div>
+
+<!-- Main Content -->
+<div class="main">
+
+  <!-- Page Header -->
+  <div class="page-header" id="overview">
+    <h1>Edward 个人成长成功系统 — 总体规划</h1>
+    <p class="subtitle">版本 3.0 | 2026-10-12 | 7位专家联合评估 | 全量落地方案</p>
+  </div>
+
+  <!-- Key Stats -->
+  <div class="stats-row">
+    <div class="stat-item"><div class="stat-number">26</div><div class="stat-label">数据库表</div></div>
+    <div class="stat-item"><div class="stat-number">60+</div><div class="stat-label">API端点</div></div>
+    <div class="stat-item"><div class="stat-number">38</div><div class="stat-label">前端页面</div></div>
+    <div class="stat-item"><div class="stat-number">10</div><div class="stat-label">功能模块</div></div>
+    <div class="stat-item"><div class="stat-number">4</div><div class="stat-label">Docker容器</div></div>
+    <div class="stat-item"><div class="stat-number">~90</div><div class="stat-label">新增/修复文件</div></div>
+  </div>
+
+  <!-- Expert Scores -->
+  <div id="scores">
+    <div class="score-grid">
+      <div class="score-card">
+        <div class="label">架构完整性</div>
+        <div class="score high">78<span style="font-size:16px;color:#999">/100</span></div>
+        <div class="detail">5大模块设计齐全，模块间接口待定义</div>
+      </div>
+      <div class="score-card">
+        <div class="label">后端代码</div>
+        <div class="score low">48<span style="font-size:16px;color:#999">/100</span></div>
+        <div class="detail">4个运行时崩溃BUG + 无认证</div>
+      </div>
+      <div class="score-card">
+        <div class="label">部署就绪度</div>
+        <div class="score mid">62<span style="font-size:16px;color:#999">/100</span></div>
+        <div class="detail">密钥泄露 + Docker配置有误</div>
+      </div>
+      <div class="score-card">
+        <div class="label">飞书集成</div>
+        <div class="score mid">65<span style="font-size:16px;color:#999">/100</span></div>
+        <div class="detail">App ID不一致 + Token缓存BUG</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Critical Bugs -->
+  <div class="section" id="bugs">
+    <h2 class="section-title" style="color:var(--danger)">关键BUG（阻塞系统运行）</h2>
+    <div class="bug-card">
+      <div class="bug-title">BUG #1: init_db.py 引用不存在的 HabitTemplate 模型</div>
+      <div class="bug-detail">文件: <span class="bug-file">backend/init_db.py</span> — 数据库初始化直接崩溃，User/UserProfile字段与ORM模型不匹配</div>
+    </div>
+    <div class="bug-card">
+      <div class="bug-title">BUG #2: ReviewSummary 字段不匹配</div>
+      <div class="bug-detail">文件: <span class="bug-file">backend/app/routes/review.py</span> — period_start/period_end等字段在ORM模型中不存在，创建复盘总结时报错</div>
+    </div>
+    <div class="bug-card">
+      <div class="bug-title">BUG #3: BilingualSpeech 字段名错误</div>
+      <div class="bug-detail">文件: <span class="bug-file">backend/app/routes/speech.py</span> — speech_id 应为 speech_draft_id，查询双语演讲时报错</div>
+    </div>
+    <div class="bug-card">
+      <div class="bug-title">BUG #4: ApplicationStats 缺少字段</div>
+      <div class="bug-detail">文件: <span class="bug-file">backend/app/routes/application.py</span> — avg_effectiveness/avg_confidence/by_domain/recent_activity 字段不存在</div>
+    </div>
+    <div class="bug-card">
+      <div class="bug-title">BUG #5: FeishuBotService Token 永不过期</div>
+      <div class="bug-detail">文件: <span class="bug-file">backend/app/push_services.py</span> — _token_expire 存相对值却与0比较，应改为绝对时间戳</div>
+    </div>
+  </div>
+
+  <!-- System Architecture -->
+  <div class="section" id="architecture">
+    <h2 class="section-title">系统架构全景</h2>
+    <div class="arch-diagram">
+      <!-- User Layer -->
+      <div class="arch-layer">
+        <div class="arch-layer-label" style="background:#722ed1">用户触达</div>
+        <div class="arch-layer-content">
+          <div class="arch-box" style="border-color:#722ed1"><div class="box-title" style="color:#722ed1">VBEN ADMIN</div><div class="box-desc">Vue3 + Vite + Ant Design<br/>38页面 | 10模块</div></div>
+          <div class="arch-box feishu"><div class="box-title">飞书多维表格</div><div class="box-desc">已有8张表<br/>Base: HvhnbcCCTaq</div></div>
+          <div class="arch-box feishu"><div class="box-title">飞书Bot推送</div><div class="box-desc">晨间/午间/晚间<br/>+ 预警通知</div></div>
+          <div class="arch-box" style="border-color:#52c41a"><div class="box-title" style="color:#52c41a">微信推送</div><div class="box-desc">Server酱通道</div></div>
+        </div>
+      </div>
+      <!-- Gateway -->
+      <div class="arch-layer">
+        <div class="arch-layer-label" style="background:#13c2c2">网关层</div>
+        <div class="arch-layer-content">
+          <div class="arch-box" style="border-color:#13c2c2;flex:1"><div class="box-title" style="color:#13c2c2">Nginx</div><div class="box-desc">反向代理 /api/* → FastAPI:8000 | SPA回退 | Gzip | 安全头</div></div>
+        </div>
+      </div>
+      <!-- Business Layer -->
+      <div class="arch-layer">
+        <div class="arch-layer-label" style="background:var(--primary)">业务层</div>
+        <div class="arch-layer-content">
+          <div class="arch-box"><div class="box-title">认证模块</div><div class="box-desc">JWT + OAuth2</div></div>
+          <div class="arch-box"><div class="box-title">知识管理</div><div class="box-desc">NLP + 图谱</div></div>
+          <div class="arch-box"><div class="box-title">学习引擎</div><div class="box-desc">推荐算法</div></div>
+          <div class="arch-box"><div class="box-title">复盘系统</div><div class="box-desc">日/周/月/季</div></div>
+          <div class="arch-box"><div class="box-title">演讲生成</div><div class="box-desc">TED/双语</div></div>
+          <div class="arch-box"><div class="box-title">国学经典</div><div class="box-desc">6部12月</div></div>
+          <div class="arch-box"><div class="box-title">习惯追踪</div><div class="box-desc">打卡+streak</div></div>
+          <div class="arch-box"><div class="box-title">目标管理</div><div class="box-desc">SMART</div></div>
+          <div class="arch-box"><div class="box-title">爬虫调度</div><div class="box-desc">5领域RSS</div></div>
+          <div class="arch-box"><div class="box-title">预警系统</div><div class="box-desc">三级预警</div></div>
+        </div>
+      </div>
+      <!-- Data Layer -->
+      <div class="arch-layer">
+        <div class="arch-layer-label" style="background:#52c41a">数据层</div>
+        <div class="arch-layer-content">
+          <div class="arch-box db"><div class="box-title">PostgreSQL 14</div><div class="box-desc">26张表 | 3函数 | 3视图<br/>JSONB + GIN索引</div></div>
+          <div class="arch-box db"><div class="box-title">Redis 7</div><div class="box-desc">缓存/去重/会话<br/>256MB LRU</div></div>
+          <div class="arch-box feishu"><div class="box-title">飞书Base (云端)</div><div class="box-desc">8张表 | 双向同步</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Docker Architecture -->
+  <div class="section" id="docker">
+    <h2 class="section-title">Docker 本地部署架构</h2>
+    <div class="docker-diagram">
+      <div class="docker-container" style="border-color:#722ed1">
+        <div class="container-name">frontend</div>
+        <div class="container-icon">&#127760;</div>
+        <div><strong>Nginx</strong></div>
+        <div style="font-size:11px;color:#999">Vue3 静态文件</div>
+        <div class="container-port">:80</div>
+      </div>
+      <div class="docker-arrow">&#10145;</div>
+      <div class="docker-container" style="border-color:var(--primary)">
+        <div class="container-name">api</div>
+        <div class="container-icon">&#9881;</div>
+        <div><strong>FastAPI</strong></div>
+        <div style="font-size:11px;color:#999">Uvicorn + 60+ API</div>
+        <div class="container-port">:8000</div>
+      </div>
+      <div class="docker-arrow">&#10145;</div>
+      <div class="docker-container" style="border-color:#52c41a">
+        <div class="container-name">postgres</div>
+        <div class="container-icon">&#128451;</div>
+        <div><strong>PostgreSQL 14</strong></div>
+        <div style="font-size:11px;color:#999">26张表 + 自动初始化</div>
+        <div class="container-port">:5432</div>
+      </div>
+      <div class="docker-arrow">&#10145;</div>
+      <div class="docker-container" style="border-color:#ff4d4f">
+        <div class="container-name">redis</div>
+        <div class="container-icon">&#9889;</div>
+        <div><strong>Redis 7</strong></div>
+        <div style="font-size:11px;color:#999">缓存/去重/会话</div>
+        <div class="container-port">:6379</div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:12px;padding:12px;background:#fffbe6;border-radius:6px;font-size:13px;color:#ad8b00">
+      <strong>Docker未安装？</strong> 提供替代方案：直接 Python (uvicorn) + Node.js (vite dev) 本地运行
+    </div>
+  </div>
+
+  <!-- Project Structure -->
+  <div class="section" id="structure">
+    <h2 class="section-title">项目目录结构（最终状态）</h2>
+    <pre style="font-size:12px;line-height:1.8;background:#f8fafc;padding:16px;border-radius:6px;overflow-x:auto;font-family:'Cascadia Code','Fira Code',monospace">
+D:\Edward 个人成长成功系统\
+├── .gitignore / .dockerignore / .env.example
+├── docker-compose.yml              <span style="color:#1890ff">[修复] 4容器编排</span>
+├── README.md                       <span style="color:#1890ff">[更新]</span>
+│
+├── docs/                           <span style="color:#52c41a">[新增] 20+文档归档</span>
+│   ├── architecture/ (3 files)
+│   ├── api/ (1 file)
+│   ├── plans/ (3 files)
+│   ├── features/ (3 files)
+│   └── operations/ (3 files)
+│
+├── backend/
+│   ├── Dockerfile                  <span style="color:#1890ff">[修复] 多阶段构建</span>
+│   ├── docker-entrypoint.sh        <span style="color:#52c41a">[新增]</span>
+│   ├── requirements.txt            <span style="color:#1890ff">[修复] 移除torch/uuid</span>
+│   ├── app/
+│   │   ├── main.py                 <span style="color:#1890ff">[修复] 路由+CORS</span>
+│   │   ├── models.py               <span style="color:#999">12基础模型</span>
+│   │   ├── models_extended.py      <span style="color:#1890ff">[修复] Date导入</span>
+│   │   ├── schemas/                <span style="color:#52c41a">[新增] 9个Pydantic模块</span>
+│   │   ├── core/                   <span style="color:#52c41a">[新增] security/exceptions/middleware</span>
+│   │   ├── services/               <span style="color:#52c41a">[新增] 9个业务服务</span>
+│   │   ├── routes/                 <span style="color:#1890ff">[重构] 14个路由模块</span>
+│   │   ├── nlp.py                  <span style="color:#1890ff">[增强]</span>
+│   │   ├── crawler.py              <span style="color:#1890ff">[完善] 3个爬虫</span>
+│   │   ├── recommender.py          <span style="color:#52c41a">[新增]</span>
+│   │   ├── push_services.py        <span style="color:#ff4d4f">[修复] Token缓存</span>
+│   │   └── scheduler.py            <span style="color:#1890ff">[完善]</span>
+│   ├── init_db.py                  <span style="color:#ff4d4f">[修复] 移除HabitTemplate</span>
+│   └── tests/                      <span style="color:#52c41a">[新增]</span>
+│
+├── frontend/                       <span style="color:#52c41a">[新增] VBEN ADMIN</span>
+│   ├── Dockerfile / nginx.conf
+│   └── src/
+│       ├── api/ (12 modules)
+│       ├── views/ (38 pages)
+│       ├── components/ (charts/cards/forms)
+│       ├── router/ / store/ / utils/
+│
+├── database/
+│   ├── schema.sql / schema_extended.sql
+│   └── seed_data.sql               <span style="color:#52c41a">[新增]</span>
+│
+└── scripts/                        <span style="color:#52c41a">[新增]</span>
+    ├── backup.sh / health_check.sh / init_dev.sh
+</pre>
+  </div>
+
+  <!-- Frontend Pages -->
+  <div class="section" id="pages">
+    <h2 class="section-title">前端页面结构（10模块 / 38页面）</h2>
+    <div class="page-tree">
+      <div class="tree-module">
+        <div class="tree-module-header">&#127968; 首页 Dashboard</div>
+        <div class="tree-pages">
+          <div class="tree-page">成长概览卡片（连续天数/完成率/知识总量/目标进度）<span class="route">/dashboard</span></div>
+        </div>
+      </div>
+      <div class="tree-module">
+        <div class="tree-module-header">&#128218; 学习中心 Learning（4页）</div>
+        <div class="tree-pages">
+          <div class="tree-page">今日学习任务（晨/午/晚三段式）<span class="route">/learning/today</span></div>
+          <div class="tree-page">学习内容库（搜索+筛选+分页）<span class="route">/learning/content</span></div>
+          <div class="tree-page">学习记录（时间线+评分）<span class="route">/learning/records</span></div>
+          <div class="tree-page">每日打卡（心情/精力/三件事）<span class="route">/learning/checkin</span></div>
+        </div>
+      </div>
+      <div class="tree-module">
+        <div class="tree-module-header">&#128161; 知识管理 Knowledge（5页）</div>
+        <div class="tree-pages">
+          <div class="tree-page">快速录入（文字/语音+NLP自动打标）<span class="route">/knowledge/capture</span></div>
+          <div class="tree-page">知识洞察列表（领域/意图/状态筛选）<span class="route">/knowledge/insights</span></div>
+          <div class="tree-page">结构化知识库（卡片网格+掌握度）<span class="route">/knowledge/structured</span></div>
+          <div class="tree-page">知识库浏览（分类树+列表）<span class="route">/knowledge/library</span></div>
+          <div class="tree-page">知识图谱可视化（ECharts力导向图）<span class="route">/knowledge/graph</span></div>
+        </div>
+      </div>
+      <div class="tree-module">
+        <div class="tree-module-header">&#128260; 复盘系统 Review（5页）</div>
+        <div class="tree-pages">
+          <div class="tree-page">复盘会话列表<span class="route">/review/sessions</span></div>
+          <div class="tree-page">每日复盘（5个核心问题）<span class="route">/review/daily</span></div>
+          <div class="tree-page">每周复盘（MASK维度对比）<span class="route">/review/weekly</span></div>
+          <div class="tree-page">月度/季度复盘（SMART+Maslow雷达图）<span class="route">/review/periodic</span></div>
+          <div class="tree-page">复盘总结归档<span class="route">/review/summaries</span></div>
+        </div>
+      </div>
+      <div class="tree-module">
+        <div class="tree-module-header">&#127908; 演讲工坊 Speech（3页）</div>
+        <div class="tree-pages">
+          <div class="tree-page">演讲稿管理（TED/Toastmasters/电梯/故事 4模板）<span class="route">/speech/drafts</span></div>
+          <div class="tree-page">双语演讲（中英对照SplitView）<span class="route">/speech/bilingual</span></div>
+          <div class="tree-page">素材库（故事/名言/案例/数据/类比）<span class="route">/speech/materials</span></div>
+        </div>
+      </div>
+      <div class="tree-module">
+        <div class="tree-module-header">&#128218; 国学经典 Classics（3页）</div>
+        <div class="tree-pages">
+          <div class="tree-page">学习进度总览（6部经典进度卡）<span class="route">/classics/progress</span></div>
+          <div class="tree-page">经典详情（原文+译文+解读三栏）<span class="route">/classics/detail/:id</span></div>
+          <div class="tree-page">读书笔记<span class="route">/classics/notes</span></div>
+        </div>
+      </div>
+      <div class="tree-module">
+        <div class="tree-module-header">&#9989; 习惯追踪 Habits（3页）</div>
+        <div class="tree-pages">
+          <div class="tree-page">习惯管理（CRUD + streak显示）<span class="route">/habits/manage</span></div>
+          <div class="tree-page">打卡日历（GitHub风格热力图）<span class="route">/habits/calendar</span></div>
+          <div class="tree-page">统计分析（完成率+趋势）<span class="route">/habits/stats</span></div>
+        </div>
+      </div>
+      <div class="tree-module">
+        <div class="tree-module-header">&#127919; 目标管理 Goals（2页）</div>
+        <div class="tree-pages">
+          <div class="tree-page">目标列表（SMART表单+进度条）<span class="route">/goals/list</span></div>
+          <div class="tree-page">里程碑追踪（时间线）<span class="route">/goals/milestones/:id</span></div>
+        </div>
+      </div>
+      <div class="tree-module">
+        <div class="tree-module-header">&#9881; 系统管理 System（4页）</div>
+        <div class="tree-pages">
+          <div class="tree-page">用户设置（画像+偏好+雷达图）<span class="route">/system/profile</span></div>
+          <div class="tree-page">推送配置（渠道开关+时间+免打扰）<span class="route">/system/push</span></div>
+          <div class="tree-page">爬虫管理（状态+手动触发）<span class="route">/system/crawler</span></div>
+          <div class="tree-page">预警规则（三级预警CRUD）<span class="route">/system/alerts</span></div>
+        </div>
+      </div>
+      <div class="tree-module">
+        <div class="tree-module-header">&#128202; 数据分析 Analytics（4页）</div>
+        <div class="tree-pages">
+          <div class="tree-page">成长仪表盘（大数字+ROI+AI评语）<span class="route">/analytics/dashboard</span></div>
+          <div class="tree-page">领域完成度雷达图（MASK/Maslow/7Habits）<span class="route">/analytics/radar</span></div>
+          <div class="tree-page">行为模式分析（活跃时段热力图）<span class="route">/analytics/patterns</span></div>
+          <div class="tree-page">趋势分析（时长/完成率/知识积累曲线）<span class="route">/analytics/trends</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tech Stack -->
+  <div class="section" id="tech">
+    <h2 class="section-title">前端技术选型</h2>
+    <table class="api-table">
+      <tr><th>维度</th><th>选型</th><th>说明</th></tr>
+      <tr><td>框架</td><td><strong>Vue Vben Admin v2.11+</strong></td><td>Vue 3 + Vite + TypeScript 企业级管理框架</td></tr>
+      <tr><td>UI库</td><td><strong>Ant Design Vue 4.x</strong></td><td>表格/表单/图表组件最丰富</td></tr>
+      <tr><td>构建</td><td><strong>Vite 5.x</strong></td><td>极速HMR</td></tr>
+      <tr><td>语言</td><td><strong>TypeScript 5.x</strong></td><td>类型安全，与后端Pydantic对齐</td></tr>
+      <tr><td>状态</td><td><strong>Pinia 2.x</strong></td><td>Vue 3官方推荐</td></tr>
+      <tr><td>图表</td><td><strong>ECharts 5.5 + vue-echarts</strong></td><td>雷达图/折线图/热力图/力导向图</td></tr>
+      <tr><td>HTTP</td><td><strong>Axios</strong></td><td>请求拦截器+Token自动刷新</td></tr>
+    </table>
+  </div>
+
+  <!-- API Matrix -->
+  <div class="section" id="api">
+    <h2 class="section-title">API 端点矩阵（60+端点）</h2>
+    <table class="api-table">
+      <thead>
+        <tr><th>模块</th><th>方法</th><th>端点</th><th>状态</th></tr>
+      </thead>
+      <tbody>
+        <tr><td rowspan="2">认证</td><td><span class="api-method post">POST</span></td><td>/api/v1/auth/login</td><td><span class="api-status new">需新增</span></td></tr>
+        <tr><td><span class="api-method post">POST</span></td><td>/api/v1/auth/refresh</td><td><span class="api-status new">需新增</span></td></tr>
+        <tr><td rowspan="2">知识</td><td><span class="api-method post">POST</span></td><td>/api/insights/capture</td><td><span class="api-status ok">可用</span></td></tr>
+        <tr><td><span class="api-method get">GET</span></td><td>/api/insights/graph</td><td><span class="api-status new">需新增</span></td></tr>
+        <tr><td rowspan="2">复盘</td><td><span class="api-method post">POST</span></td><td>/api/review/trigger</td><td><span class="api-status ok">可用</span></td></tr>
+        <tr><td><span class="api-method post">POST</span></td><td>/api/review/summary</td><td><span class="api-status bug">有BUG</span></td></tr>
+        <tr><td rowspan="2">演讲</td><td><span class="api-method post">POST</span></td><td>/api/speech/generate</td><td><span class="api-status ok">可用</span></td></tr>
+        <tr><td><span class="api-method get">GET</span></td><td>/api/speech/bilingual/{id}</td><td><span class="api-status bug">有BUG</span></td></tr>
+        <tr><td>应用</td><td><span class="api-method get">GET</span></td><td>/api/application/stats</td><td><span class="api-status bug">有BUG</span></td></tr>
+        <tr><td rowspan="2">习惯</td><td><span class="api-method get">GET</span></td><td>/habits</td><td><span class="api-status new">需新增</span></td></tr>
+        <tr><td><span class="api-method post">POST</span></td><td>/habits/{id}/log</td><td><span class="api-status new">需新增</span></td></tr>
+        <tr><td rowspan="2">目标</td><td><span class="api-method get">GET</span></td><td>/goals</td><td><span class="api-status new">需新增</span></td></tr>
+        <tr><td><span class="api-method put">PUT</span></td><td>/goals/{id}/progress</td><td><span class="api-status new">需新增</span></td></tr>
+        <tr><td rowspan="2">国学</td><td><span class="api-method get">GET</span></td><td>/api/classics/progress</td><td><span class="api-status new">需新增</span></td></tr>
+        <tr><td><span class="api-method get">GET</span></td><td>/api/classics/{name}/{chapter}</td><td><span class="api-status new">需新增</span></td></tr>
+        <tr><td rowspan="3">仪表盘</td><td><span class="api-method get">GET</span></td><td>/api/v1/dashboard/overview</td><td><span class="api-status new">需新增</span></td></tr>
+        <tr><td><span class="api-method get">GET</span></td><td>/api/v1/dashboard/mask</td><td><span class="api-status new">需新增</span></td></tr>
+        <tr><td><span class="api-method get">GET</span></td><td>/api/v1/dashboard/maslow</td><td><span class="api-status new">需新增</span></td></tr>
+        <tr><td rowspan="2">爬虫</td><td><span class="api-method get">GET</span></td><td>/api/crawler/status</td><td><span class="api-status new">需新增</span></td></tr>
+        <tr><td><span class="api-method post">POST</span></td><td>/api/crawler/{name}/run</td><td><span class="api-status new">需新增</span></td></tr>
+        <tr><td>预警</td><td><span class="api-method get">GET</span></td><td>/api/alerts/rules</td><td><span class="api-status new">需新增</span></td></tr>
+        <tr><td>推荐</td><td><span class="api-method get">GET</span></td><td>/api/v1/recommendations/daily</td><td><span class="api-status new">需新增</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Timeline -->
+  <div class="section" id="timeline">
+    <h2 class="section-title">实施路线图（4阶段）</h2>
+    <div class="timeline">
+      <div class="timeline-phase p0">
+        <div class="phase-title">第1阶段：基础修复与安全保障</div>
+        <div class="phase-time">预计 2-3 小时 | P0 紧急</div>
+        <ul class="phase-tasks">
+          <li>安全加固：.gitignore + 文档脱敏 + 强密钥生成</li>
+          <li>BUG修复：init_db.py / review.py / speech.py / application.py / push_services.py</li>
+          <li>依赖精简：移除 uuid/datetime/torch/transformers</li>
+          <li>项目结构：创建 docs/ + frontend/ + scripts/ 目录，文档归档</li>
+          <li>Docker修复：docker-compose.yml + Dockerfile + entrypoint.sh</li>
+        </ul>
+      </div>
+      <div class="timeline-phase p0">
+        <div class="phase-title">第2阶段：后端功能补全</div>
+        <div class="phase-time">预计 3-4 小时 | P0</div>
+        <ul class="phase-tasks">
+          <li>核心层：schemas/ + core/security.py + dependencies.py</li>
+          <li>路由重构：14个模块拆分 + /api/v1/ 统一前缀</li>
+          <li>新增路由：habits + goals + classics + dashboard + crawler + alerts</li>
+          <li>业务层：9个 services/ 文件</li>
+          <li>NLP增强：意图分类(6类) + 领域识别(5领域) + 实体提取</li>
+          <li>推荐引擎：内容based + 难度匹配 + 新鲜度加权</li>
+          <li>飞书修复：Token缓存 + App ID统一 + 推送测试</li>
+        </ul>
+      </div>
+      <div class="timeline-phase p0">
+        <div class="phase-title">第3阶段：VBEN ADMIN 前端开发</div>
+        <div class="phase-time">预计 4-6 小时 | P0</div>
+        <ul class="phase-tasks">
+          <li>项目初始化：clone VBEN ADMIN + 依赖安装 + 配置</li>
+          <li>API层：Axios封装 + 12个API模块 + Token拦截器</li>
+          <li>路由配置：10个模块路由 + 认证守卫</li>
+          <li>核心页面：Dashboard + 知识管理 + 学习中心 + 习惯打卡</li>
+          <li>进阶页面：复盘 + 演讲 + 国学 + 目标 + 应用追踪</li>
+          <li>分析页面：雷达图 + 趋势图 + 热力图 + 知识图谱</li>
+          <li>Docker化：前端Dockerfile + nginx.conf</li>
+        </ul>
+      </div>
+      <div class="timeline-phase p1">
+        <div class="phase-title">第4阶段：集成验证</div>
+        <div class="phase-time">预计 1-2 小时 | P1</div>
+        <ul class="phase-tasks">
+          <li>Docker全链路启动验证（4容器健康检查）</li>
+          <li>前后端联调测试（38页面 x API对接）</li>
+          <li>飞书推送端到端测试</li>
+          <li>数据库初始化 + 种子数据加载</li>
+          <li>文档更新 + CHANGELOG.md</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Deliverables -->
+  <div class="section" id="deliverables">
+    <h2 class="section-title">交付物清单</h2>
+    <table class="api-table">
+      <tr><th>类别</th><th>数量</th><th>说明</th></tr>
+      <tr><td>修复的BUG</td><td><strong>5个</strong></td><td>init_db / review / speech / application / push_services</td></tr>
+      <tr><td>新增后端文件</td><td><strong>~30个</strong></td><td>schemas/ + core/ + services/ + routes/ + tests/</td></tr>
+      <tr><td>新增前端文件</td><td><strong>~60个</strong></td><td>views/ + api/ + components/ + router/ + store/</td></tr>
+      <tr><td>修复的配置文件</td><td><strong>5个</strong></td><td>docker-compose / Dockerfile / requirements / .env / models_extended</td></tr>
+      <tr><td>新增运维文件</td><td><strong>5个</strong></td><td>scripts/ + entrypoint + nginx.conf + seed_data</td></tr>
+      <tr><td>文档归档</td><td><strong>20+个</strong></td><td>移入 docs/ 分目录</td></tr>
+    </table>
+  </div>
+
+</div>
+
+<script>
+mermaid.initialize({ startOnLoad: false });
+
+// Smooth scroll & active nav
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', function(e) {
+    e.preventDefault();
+    const target = document.querySelector(this.getAttribute('href'));
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+// Scroll spy
+const sections = document.querySelectorAll('[id]');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(section => {
+    const rect = section.getBoundingClientRect();
+    if (rect.top <= 100) current = section.id;
+  });
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.classList.toggle('active', item.getAttribute('href') === '#' + current);
+  });
+});
+</script>
+</body>
+</html>
