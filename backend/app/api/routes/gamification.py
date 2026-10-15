@@ -14,6 +14,7 @@ from sqlalchemy import func
 from pydantic import BaseModel, Field
 
 from app.database import get_db
+from app.dependencies import get_current_user_id
 from app.models import UserProfile, LearningContent, LearningRecord
 from app.models_extended import (
     UserLevel, Achievement, UserAchievement, DailyQuest,
@@ -21,8 +22,6 @@ from app.models_extended import (
 )
 
 router = APIRouter(prefix="/api/v1/gamification", tags=["gamification"])
-
-DEFAULT_USER_ID = UUID("00000000-0000-0000-0000-000000000001")
 
 LEVEL_TITLES = {
     1: "成长新手", 2: "学习萌芽", 3: "知识探索者", 4: "勤奋学徒", 5: "进阶学习者",
@@ -210,7 +209,8 @@ class DashboardResponse(BaseModel):
 # --- Endpoints ---
 
 @router.get("/dashboard", response_model=DashboardResponse)
-async def get_dashboard(user_id: UUID = DEFAULT_USER_ID, db: Session = Depends(get_db)):
+async def get_dashboard(user_id: str = Depends(get_current_user_id), db: Session = Depends(get_db)):
+    user_id = UUID(user_id)
     level = get_or_create_level(db, user_id)
     profile = db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
 
@@ -271,7 +271,8 @@ async def get_dashboard(user_id: UUID = DEFAULT_USER_ID, db: Session = Depends(g
 
 
 @router.post("/xp", response_model=LevelResponse)
-async def award_xp(req: XPRequest, user_id: UUID = DEFAULT_USER_ID, db: Session = Depends(get_db)):
+async def award_xp(req: XPRequest, user_id: str = Depends(get_current_user_id), db: Session = Depends(get_db)):
+    user_id = UUID(user_id)
     profile = db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
     level = get_or_create_level(db, user_id)
 
@@ -304,13 +305,15 @@ async def award_xp(req: XPRequest, user_id: UUID = DEFAULT_USER_ID, db: Session 
 
 
 @router.post("/quests/generate", response_model=List[QuestResponse])
-async def generate_quests(user_id: UUID = DEFAULT_USER_ID, db: Session = Depends(get_db)):
+async def generate_quests(user_id: str = Depends(get_current_user_id), db: Session = Depends(get_db)):
+    user_id = UUID(user_id)
     quests = generate_daily_quests(db, user_id)
     return [QuestResponse.model_validate(q) for q in quests]
 
 
 @router.get("/quests/today", response_model=List[QuestResponse])
-async def get_today_quests(user_id: UUID = DEFAULT_USER_ID, db: Session = Depends(get_db)):
+async def get_today_quests(user_id: str = Depends(get_current_user_id), db: Session = Depends(get_db)):
+    user_id = UUID(user_id)
     today_str = date.today().isoformat()
     quests = db.query(DailyQuest).filter(
         DailyQuest.user_id == user_id,
@@ -321,7 +324,8 @@ async def get_today_quests(user_id: UUID = DEFAULT_USER_ID, db: Session = Depend
 
 
 @router.post("/quests/{quest_id}/complete", response_model=dict)
-async def complete_quest(quest_id: UUID, user_id: UUID = DEFAULT_USER_ID, db: Session = Depends(get_db)):
+async def complete_quest(quest_id: UUID, user_id: str = Depends(get_current_user_id), db: Session = Depends(get_db)):
+    user_id = UUID(user_id)
     quest = db.query(DailyQuest).filter(
         DailyQuest.id == quest_id,
         DailyQuest.user_id == user_id).first()
@@ -355,7 +359,8 @@ async def complete_quest(quest_id: UUID, user_id: UUID = DEFAULT_USER_ID, db: Se
 
 
 @router.post("/streak/update", response_model=dict)
-async def update_streak(req: StreakUpdateRequest, user_id: UUID = DEFAULT_USER_ID, db: Session = Depends(get_db)):
+async def update_streak(req: StreakUpdateRequest, user_id: str = Depends(get_current_user_id), db: Session = Depends(get_db)):
+    user_id = UUID(user_id)
     sr = db.query(StreakRecord).filter(
         StreakRecord.user_id == user_id,
         StreakRecord.streak_type == req.streak_type).first()
@@ -397,7 +402,8 @@ async def update_streak(req: StreakUpdateRequest, user_id: UUID = DEFAULT_USER_I
 
 
 @router.get("/achievements", response_model=List[AchievementResponse])
-async def get_achievements(user_id: UUID = DEFAULT_USER_ID, db: Session = Depends(get_db)):
+async def get_achievements(user_id: str = Depends(get_current_user_id), db: Session = Depends(get_db)):
+    user_id = UUID(user_id)
     all_achs = db.query(Achievement).filter(Achievement.is_active == True).all()
     unlocked = {ua.achievement_id: ua for ua in db.query(UserAchievement).filter(
         UserAchievement.user_id == user_id).all()}
@@ -419,7 +425,8 @@ async def get_achievements(user_id: UUID = DEFAULT_USER_ID, db: Session = Depend
 
 
 @router.get("/level", response_model=LevelResponse)
-async def get_level(user_id: UUID = DEFAULT_USER_ID, db: Session = Depends(get_db)):
+async def get_level(user_id: str = Depends(get_current_user_id), db: Session = Depends(get_db)):
+    user_id = UUID(user_id)
     level = get_or_create_level(db, user_id)
     profile = db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
     xp_in_level = level.total_xp - xp_to_reach_level(level.current_level)
@@ -435,7 +442,8 @@ async def get_level(user_id: UUID = DEFAULT_USER_ID, db: Session = Depends(get_d
 
 
 @router.post("/streak/use-freeze", response_model=dict)
-async def use_freeze_token(user_id: UUID = DEFAULT_USER_ID, db: Session = Depends(get_db)):
+async def use_freeze_token(user_id: str = Depends(get_current_user_id), db: Session = Depends(get_db)):
+    user_id = UUID(user_id)
     profile = db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
     if not profile or (profile.freeze_tokens or 0) <= 0:
         raise HTTPException(400, "No freeze tokens available")

@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.dependencies import get_current_user_id
 from app.models_extended import KnowledgeInsight, StructuredKnowledge
 from app.nlp import NLPPipeline
 from pydantic import BaseModel, Field
@@ -84,6 +85,7 @@ class StructuredKnowledgeResponse(BaseModel):
 @router.post("/capture", response_model=InsightResponse, status_code=status.HTTP_201_CREATED)
 async def capture_insight(
     request: InsightCaptureRequest,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
     """
@@ -106,7 +108,7 @@ async def capture_insight(
     
     # Create insight record with NLP-enriched data
     insight = KnowledgeInsight(
-        user_id=UUID("00000000-0000-0000-0000-000000000001"),  # TODO: Get from JWT auth
+        user_id=UUID(user_id),
         content=request.content,
         domain=domain,
         intent=intent,
@@ -132,6 +134,7 @@ async def capture_insight(
 @router.get("/{insight_id}", response_model=InsightResponse)
 async def get_insight(
     insight_id: UUID,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
     """Get a specific knowledge insight by ID"""
@@ -148,6 +151,7 @@ async def list_insights(
     status_filter: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
     """
@@ -160,7 +164,7 @@ async def list_insights(
     - limit: Number of results (default 50, max 200)
     - offset: Pagination offset
     """
-    query = db.query(KnowledgeInsight)
+    query = db.query(KnowledgeInsight).filter(KnowledgeInsight.user_id == UUID(user_id))
     
     if domain:
         query = query.filter(KnowledgeInsight.domain == domain)
@@ -176,6 +180,7 @@ async def list_insights(
 @router.post("/structure", response_model=StructuredKnowledgeResponse, status_code=status.HTTP_201_CREATED)
 async def structure_knowledge(
     request: StructuredKnowledgeRequest,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
     """
@@ -224,6 +229,7 @@ async def structure_knowledge(
 @router.get("/knowledge/{knowledge_id}", response_model=StructuredKnowledgeResponse)
 async def get_structured_knowledge(
     knowledge_id: UUID,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
     """Get structured knowledge by ID"""

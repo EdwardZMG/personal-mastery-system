@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 
 from app.database import get_db
+from app.dependencies import get_current_user_id
 from app.models import LearningContent, LearningRecord
 
 router = APIRouter(prefix="/api/v1/learning", tags=["learning"])
@@ -75,6 +76,7 @@ async def list_learning_content(
     mask_dimension: Optional[str] = None,
     limit: int = 20,
     offset: int = 0,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     """
@@ -106,6 +108,7 @@ async def list_learning_content(
 @router.get("/content/{content_id}", response_model=LearningContentDetailResponse)
 async def get_learning_content(
     content_id: UUID,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     """Get detailed information about a specific learning content item."""
@@ -118,6 +121,7 @@ async def get_learning_content(
 @router.post("/record", response_model=LearningRecordResponse, status_code=status.HTTP_201_CREATED)
 async def log_learning_activity(
     request: LearningRecordCreate,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     """
@@ -127,8 +131,7 @@ async def log_learning_activity(
     for the same content.  When status is set to 'completed', the
     completed_at timestamp is recorded automatically.
     """
-    # TODO: Replace with real JWT auth dependency
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
+    user_id_uuid = UUID(user_id)
 
     # Verify content exists
     content = db.query(LearningContent).filter(LearningContent.content_id == request.content_id).first()
@@ -139,7 +142,7 @@ async def log_learning_activity(
     existing = (
         db.query(LearningRecord)
         .filter(
-            LearningRecord.user_id == user_id,
+            LearningRecord.user_id == user_id_uuid,
             LearningRecord.content_id == request.content_id,
             LearningRecord.status == "in_progress",
         )
@@ -161,7 +164,7 @@ async def log_learning_activity(
 
     # Create new record
     record = LearningRecord(
-        user_id=user_id,
+        user_id=user_id_uuid,
         content_id=request.content_id,
         status=request.status,
         progress_percent=request.progress_percent,
@@ -183,6 +186,7 @@ async def get_learning_history(
     content_id: Optional[UUID] = None,
     limit: int = 50,
     offset: int = 0,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     """
@@ -194,10 +198,7 @@ async def get_learning_history(
     - limit: Number of results (default 50, max 200)
     - offset: Pagination offset
     """
-    # TODO: Replace with real JWT auth dependency
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
-
-    query = db.query(LearningRecord).filter(LearningRecord.user_id == user_id)
+    query = db.query(LearningRecord).filter(LearningRecord.user_id == UUID(user_id))
 
     if status_filter:
         query = query.filter(LearningRecord.status == status_filter)

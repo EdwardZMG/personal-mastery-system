@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 
 from app.database import get_db
+from app.dependencies import get_current_user_id
 from app.models import (
     User, UserProfile, LearningContent, LearningRecord,
     DailyCheckin, Goal, HabitTracking, KnowledgeBase,
@@ -90,6 +91,7 @@ class ContentResponse(BaseModel):
 @router.get("/stats", response_model=SystemStatsResponse)
 async def get_system_stats(
     db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
 ):
     """
     Get system-wide statistics.
@@ -119,6 +121,7 @@ async def list_content(
     limit: int = 50,
     offset: int = 0,
     db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
 ):
     """List learning content with optional filtering."""
     query = db.query(LearningContent)
@@ -133,6 +136,7 @@ async def list_content(
 async def create_content(
     request: ContentCreate,
     db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
 ):
     """
     Create new learning content (admin operation).
@@ -164,6 +168,7 @@ async def update_content(
     content_id: UUID,
     request: ContentUpdate,
     db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
 ):
     """
     Update existing learning content (admin operation).
@@ -187,6 +192,7 @@ async def update_content(
 async def delete_content(
     content_id: UUID,
     db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
 ):
     """
     Delete learning content (admin operation).

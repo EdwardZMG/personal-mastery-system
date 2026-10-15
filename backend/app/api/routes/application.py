@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.dependencies import get_current_user_id
 from app.models_extended import KnowledgeApplication, ApplicationStats, StructuredKnowledge
 from pydantic import BaseModel, Field
 
@@ -65,6 +66,7 @@ class ApplicationStatsResponse(BaseModel):
 @router.post("/log", response_model=ApplicationResponse, status_code=status.HTTP_201_CREATED)
 async def log_application(
     request: ApplicationLogRequest,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
     """
@@ -99,7 +101,7 @@ async def log_application(
     
     # Create application record
     application = KnowledgeApplication(
-        user_id=UUID("00000000-0000-0000-0000-000000000001"),  # TODO: Get from JWT auth
+        user_id=UUID(user_id),
         knowledge_id=request.knowledge_id,
         scenario=request.scenario,
         outcome=request.outcome,
@@ -200,6 +202,7 @@ def update_application_stats(user_id: UUID, db: Session):
 
 @router.get("/stats", response_model=ApplicationStatsResponse)
 async def get_application_stats(
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
     """
@@ -217,14 +220,14 @@ async def get_application_stats(
     - Measure real-world impact of learning
     - Generate progress reports for reviews
     """
-    user_id = UUID("00000000-0000-0000-0000-000000000001")  # TODO: Get from JWT auth
+    user_id_uuid = UUID(user_id)
     
-    stats = db.query(ApplicationStats).filter(ApplicationStats.user_id == user_id).first()
+    stats = db.query(ApplicationStats).filter(ApplicationStats.user_id == user_id_uuid).first()
     if not stats:
         # Return empty stats if no applications yet
         return ApplicationStatsResponse(
             id=UUID("00000000-0000-0000-0000-000000000000"),
-            user_id=user_id,
+            user_id=user_id_uuid,
             total_applications=0,
             successful_applications=0,
             success_rate=0.0,
@@ -242,6 +245,7 @@ async def list_applications(
     effectiveness_min: Optional[float] = None,
     limit: int = 50,
     offset: int = 0,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
     """
@@ -253,7 +257,7 @@ async def list_applications(
     - limit: Number of results (default 50, max 200)
     - offset: Pagination offset
     """
-    query = db.query(KnowledgeApplication)
+    query = db.query(KnowledgeApplication).filter(KnowledgeApplication.user_id == UUID(user_id))
     
     if knowledge_id:
         query = query.filter(KnowledgeApplication.knowledge_id == knowledge_id)
@@ -267,6 +271,7 @@ async def list_applications(
 @router.get("/{application_id}", response_model=ApplicationResponse)
 async def get_application(
     application_id: UUID,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
     """Get a specific application record by ID"""

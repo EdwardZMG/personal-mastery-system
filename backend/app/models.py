@@ -165,6 +165,11 @@ class Goal(Base):
     progress_percent = Column(Integer, default=0)
     status = Column(String(50), default="active")  # active, completed, archived
     priority = Column(String(20), default="medium")
+    intent_version = Column(Integer)
+    evidence_rule = Column(Text)
+    exit_conditions = Column(Text)
+    version = Column(Integer, default=1, nullable=False)
+    completion_confirmed = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

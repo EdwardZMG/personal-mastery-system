@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 
 from app.database import get_db
+from app.dependencies import get_current_user_id
 from app.models import Goal
 
 router = APIRouter(prefix="/api/v1/goals", tags=["goals"])
@@ -27,6 +28,9 @@ class GoalCreate(BaseModel):
     start_date: Optional[str] = Field(None, description="Start date (YYYY-MM-DD)")
     end_date: Optional[str] = Field(None, description="End date / deadline (YYYY-MM-DD)")
     priority: Optional[str] = Field("medium", description="Priority: low / medium / high")
+    intent_version: Optional[int] = Field(None, description="Linked personal intent version")
+    evidence_rule: Optional[str] = Field(None, description="How to verify this goal is truly achieved")
+    exit_conditions: Optional[str] = Field(None, description="Conditions under which this goal should be abandoned")
 
 
 class GoalUpdate(BaseModel):
@@ -44,6 +48,9 @@ class GoalUpdate(BaseModel):
     progress_percent: Optional[int] = Field(None, ge=0, le=100)
     status: Optional[str] = Field(None, description="Status: active / completed / archived")
     priority: Optional[str] = None
+    evidence_rule: Optional[str] = None
+    exit_conditions: Optional[str] = None
+    completion_confirmed: Optional[bool] = None
 
 
 class GoalResponse(BaseModel):
@@ -63,6 +70,11 @@ class GoalResponse(BaseModel):
     progress_percent: int
     status: str
     priority: str
+    intent_version: Optional[int]
+    evidence_rule: Optional[str]
+    exit_conditions: Optional[str]
+    version: int
+    completion_confirmed: bool
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
 
@@ -73,6 +85,7 @@ class GoalResponse(BaseModel):
 @router.post("/", response_model=GoalResponse, status_code=status.HTTP_201_CREATED)
 async def create_goal(
     request: GoalCreate,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     """
@@ -85,11 +98,20 @@ async def create_goal(
     - **Relevant**: Aligned with broader objectives
     - **Time-bound**: Clear deadline
     """
-    # TODO: Replace with real JWT auth dependency
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
+    # Enforce max 3 active goals per user
+    active_count = (
+        db.query(Goal)
+        .filter(Goal.user_id == UUID(user_id), Goal.status == "active")
+        .count()
+    )
+    if active_count >= 3:
+        raise HTTPException(
+            status_code=400,
+            detail="最多同时拥有 3 个活跃目标，请先完成或归档现有目标",
+        )
 
     goal = Goal(
-        user_id=user_id,
+        user_id=UUID(user_id),
         title=request.title,
         description=request.description,
         category=request.category,
@@ -101,6 +123,9 @@ async def create_goal(
         start_date=request.start_date,
         end_date=request.end_date,
         priority=request.priority,
+        intent_version=request.intent_version,
+        evidence_rule=request.evidence_rule,
+        exit_conditions=request.exit_conditions,
         progress_percent=0,
         status="active",
     )
@@ -117,6 +142,7 @@ async def list_goals(
     priority: Optional[str] = None,
     limit: int = 20,
     offset: int = 0,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     """
@@ -129,10 +155,7 @@ async def list_goals(
     - limit: Number of results (default 20, max 100)
     - offset: Pagination offset
     """
-    # TODO: Replace with real JWT auth dependency
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
-
-    query = db.query(Goal).filter(Goal.user_id == user_id)
+    query = db.query(Goal).filter(Goal.user_id == UUID(user_id))
 
     if status_filter:
         query = query.filter(Goal.status == status_filter)
@@ -148,15 +171,13 @@ async def list_goals(
 @router.get("/{goal_id}", response_model=GoalResponse)
 async def get_goal(
     goal_id: UUID,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     """Get a specific goal by ID."""
-    # TODO: Replace with real JWT auth dependency
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
-
     goal = (
         db.query(Goal)
-        .filter(Goal.goal_id == goal_id, Goal.user_id == user_id)
+        .filter(Goal.goal_id == goal_id, Goal.user_id == UUID(user_id))
         .first()
     )
     if not goal:
@@ -168,6 +189,7 @@ async def get_goal(
 async def update_goal(
     goal_id: UUID,
     request: GoalUpdate,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     """
@@ -177,12 +199,9 @@ async def update_goal(
     When progress_percent reaches 100 the status is automatically set
     to 'completed'.
     """
-    # TODO: Replace with real JWT auth dependency
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
-
     goal = (
         db.query(Goal)
-        .filter(Goal.goal_id == goal_id, Goal.user_id == user_id)
+        .filter(Goal.goal_id == goal_id, Goal.user_id == UUID(user_id))
         .first()
     )
     if not goal:
@@ -204,15 +223,13 @@ async def update_goal(
 @router.delete("/{goal_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_goal(
     goal_id: UUID,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     """Delete a goal by ID."""
-    # TODO: Replace with real JWT auth dependency
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
-
     goal = (
         db.query(Goal)
-        .filter(Goal.goal_id == goal_id, Goal.user_id == user_id)
+        .filter(Goal.goal_id == goal_id, Goal.user_id == UUID(user_id))
         .first()
     )
     if not goal:

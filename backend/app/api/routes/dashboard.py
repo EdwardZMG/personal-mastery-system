@@ -9,6 +9,7 @@ from sqlalchemy import func as sql_func
 from pydantic import BaseModel, Field
 
 from app.database import get_db
+from app.dependencies import get_current_user_id
 from app.models import (
     User, UserProfile, LearningContent, LearningRecord,
     DailyCheckin, Goal, HabitTracking, HabitLog, KnowledgeBase,
@@ -99,6 +100,7 @@ class MaslowScoresResponse(BaseModel):
 @router.get("/overview", response_model=DashboardOverview)
 async def get_dashboard_overview(
     db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
 ):
     """
     Get a full dashboard overview.
@@ -106,8 +108,7 @@ async def get_dashboard_overview(
     Aggregates data from knowledge, learning, habits, goals, check-ins,
     applications, and classics modules into a single response.
     """
-    # TODO: Replace with real JWT auth dependency
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
+    user_id = UUID(user_id)
 
     # Knowledge counts
     insights_count = db.query(KnowledgeInsight).filter(KnowledgeInsight.user_id == user_id).count()
@@ -235,6 +236,7 @@ def _build_recent_activity(user_id: UUID, db: Session, limit: int = 10) -> List[
 @router.get("/knowledge-stats", response_model=KnowledgeStatsResponse)
 async def get_knowledge_stats(
     db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
 ):
     """
     Get knowledge domain distribution and mastery trends.
@@ -242,8 +244,7 @@ async def get_knowledge_stats(
     Returns counts and average mastery per domain, plus a simplified
     mastery trend over recent reviews.
     """
-    # TODO: Replace with real JWT auth dependency
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
+    user_id = UUID(user_id)
 
     insights_count = db.query(KnowledgeInsight).filter(KnowledgeInsight.user_id == user_id).count()
     app_count = db.query(KnowledgeApplication).filter(KnowledgeApplication.user_id == user_id).count()
@@ -304,6 +305,7 @@ async def get_knowledge_stats(
 async def get_learning_timeline(
     period: str = "weekly",
     db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
 ):
     """
     Get learning activity over time.
@@ -311,8 +313,7 @@ async def get_learning_timeline(
     Query parameters:
     - period: 'weekly' (last 7 days) or 'monthly' (last 30 days)
     """
-    # TODO: Replace with real JWT auth dependency
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
+    user_id = UUID(user_id)
 
     days = 7 if period == "weekly" else 30
     start = datetime.now() - timedelta(days=days)
@@ -367,14 +368,14 @@ async def get_learning_timeline(
 @router.get("/mask-scores", response_model=MaskScoresResponse)
 async def get_mask_scores(
     db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
 ):
     """
     Get current MASK dimension scores.
 
     MASK = Mindset (思维模式), Attitude (人生态度), Skills (技能), Knowledge (知识储备)
     """
-    # TODO: Replace with real JWT auth dependency
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
+    user_id = UUID(user_id)
 
     profile = db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
     if not profile or not profile.mask_scores:
@@ -392,14 +393,14 @@ async def get_mask_scores(
 @router.get("/physical-scores", response_model=PhysicalScoresResponse)
 async def get_physical_scores(
     db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
 ):
     """
     Get current physical dimension scores for four-dimension capability model.
 
     Physical dimensions: energy (精力), fitness (体能), sleep_quality (睡眠质量), exercise_frequency (运动频率)
     """
-    # TODO: Replace with real JWT auth dependency
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
+    user_id = UUID(user_id)
 
     profile = db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
     if not profile or not profile.physical_scores:
@@ -417,14 +418,14 @@ async def get_physical_scores(
 @router.get("/maslow-scores", response_model=MaslowScoresResponse)
 async def get_maslow_scores(
     db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
 ):
     """
     Get current Maslow need-level scores.
 
     Levels: physiological, safety, belonging, esteem, self_actualization
     """
-    # TODO: Replace with real JWT auth dependency
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
+    user_id = UUID(user_id)
 
     profile = db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
     if not profile or not profile.maslow_scores:

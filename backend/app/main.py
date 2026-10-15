@@ -8,13 +8,19 @@ from app.config import settings
 from app.scheduler import start_scheduler, stop_scheduler
 from app.core.exceptions import BusinessError, NotFoundError, AuthError
 from app.core.middleware import setup_request_logging
+from app.models_v4 import (  # noqa: F401 — ensure V4 tables are created
+    PersonalIntentVersion, Domain, Competency, Framework, Source,
+    PracticeTask, ArtifactVersion, Evaluation, PrincipleVersion,
+    BackgroundTaskRecord, LearningEvent, RewardLedger,
+)
 
 # Import all route modules
 from app.api.routes import (
     knowledge, review, speech, application,
     auth, learning, checkins, goals, habits,
     classics, dashboard, recommendations, crawler, admin, feishu_bot_router as feishu_bot,
-    gamification, ebbinghaus_review, instant_expert,
+    gamification, ebbinghaus_review, instant_expert, personal_intent, v4_domain, v4_practice,
+    v4_principles, v4_recommend, v5_data,
 )
 
 
@@ -24,7 +30,16 @@ from app.api.routes import (
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
+    # Startup: security checks
+    if settings.SECRET_KEY in (
+        "your-secret-key-change-in-production",
+        "edward-growth-secret-key-2026-change-in-production",
+    ):
+        raise RuntimeError(
+            "SECRET_KEY is using a default/insecure value. "
+            "Set a strong random key in .env before starting the server."
+        )
+    # Startup: database
     try:
         Base.metadata.create_all(bind=engine)
         print("Database tables verified")
@@ -145,6 +160,12 @@ app.include_router(feishu_bot)  # feishu_bot is already the router object
 app.include_router(gamification.router)
 app.include_router(ebbinghaus_review.router)
 app.include_router(instant_expert.router)
+app.include_router(personal_intent.router)
+app.include_router(v4_domain.router)
+app.include_router(v4_practice.router)
+app.include_router(v4_principles.router)
+app.include_router(v4_recommend.router)
+app.include_router(v5_data.router)
 
 
 if __name__ == "__main__":

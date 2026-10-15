@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 
 from app.database import get_db
+from app.dependencies import get_current_user_id
 from app.models import LearningContent, LearningRecord, UserProfile
 from app.models_extended import StructuredKnowledge, KnowledgeInsight
 
@@ -58,6 +59,7 @@ async def get_recommendations(
     max_difficulty: Optional[int] = None,
     limit: int = 10,
     db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
 ):
     """
     Get personalized content recommendations.
@@ -75,8 +77,7 @@ async def get_recommendations(
     - max_difficulty: Maximum difficulty level (1-5, default 5)
     - limit: Number of recommendations (default 10, max 50)
     """
-    # TODO: Replace with real JWT auth dependency
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
+    user_id = UUID(user_id)
 
     # Fetch user profile for expertise levels
     profile = db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
@@ -165,6 +166,7 @@ async def get_recommendations(
 async def get_next_review(
     limit: int = 20,
     db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
 ):
     """
     Get items due for spaced repetition review.
@@ -176,8 +178,7 @@ async def get_next_review(
     Query parameters:
     - limit: Maximum items to return (default 20, max 100)
     """
-    # TODO: Replace with real JWT auth dependency
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
+    user_id = UUID(user_id)
     today = date.today()
 
     # Get user's insight IDs

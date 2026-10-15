@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.dependencies import get_current_user_id
 from app.models_extended import ReviewSession, ReviewSummary, StructuredKnowledge
 from pydantic import BaseModel, Field
 
@@ -70,6 +71,7 @@ class ReviewSummaryResponse(BaseModel):
 @router.post("/trigger", response_model=ReviewResponse, status_code=status.HTTP_201_CREATED)
 async def trigger_review(
     request: ReviewTriggerRequest,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
     """
@@ -94,7 +96,7 @@ async def trigger_review(
     
     # Create review session
     review = ReviewSession(
-        user_id=UUID("00000000-0000-0000-0000-000000000001"),  # TODO: Get from JWT auth
+        user_id=UUID(user_id),
         review_type=request.review_type,
         scheduled_time=request.scheduled_time or datetime.now(),
         insights_json=insights,
@@ -180,6 +182,7 @@ def gather_review_insights(review_type: str, db: Session) -> dict:
 async def submit_review_response(
     review_id: UUID,
     request: ReviewSubmitRequest,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
     """
@@ -220,6 +223,7 @@ async def submit_review_response(
 @router.get("/{review_id}", response_model=ReviewResponse)
 async def get_review_session(
     review_id: UUID,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
     """Get a specific review session by ID"""
@@ -235,6 +239,7 @@ async def list_reviews(
     status_filter: Optional[str] = None,
     limit: int = 20,
     offset: int = 0,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
     """
@@ -246,7 +251,7 @@ async def list_reviews(
     - limit: Number of results (default 20, max 100)
     - offset: Pagination offset
     """
-    query = db.query(ReviewSession)
+    query = db.query(ReviewSession).filter(ReviewSession.user_id == UUID(user_id))
     
     if review_type:
         query = query.filter(ReviewSession.review_type == review_type)
@@ -260,6 +265,7 @@ async def list_reviews(
 @router.post("/summary", response_model=ReviewSummaryResponse, status_code=status.HTTP_201_CREATED)
 async def create_review_summary(
     request: ReviewSummaryCreate,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
     """

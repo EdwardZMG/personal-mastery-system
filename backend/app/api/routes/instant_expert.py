@@ -11,12 +11,11 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 
 from app.database import get_db
+from app.dependencies import get_current_user_id
 from app.models_extended import KnowledgeInsight
 from app.services.ai_service import generate_expert_explanation
 
 router = APIRouter(prefix="/api/v1/expert", tags=["instant-expert"])
-
-DEFAULT_USER_ID = UUID("00000000-0000-0000-0000-000000000001")
 
 
 class ExpertRequest(BaseModel):
@@ -34,9 +33,10 @@ class ExpertResponse(BaseModel):
 @router.post("/", response_model=ExpertResponse)
 async def get_expert_explanation(
     req: ExpertRequest,
-    user_id: UUID = DEFAULT_USER_ID,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
+    user_id = UUID(user_id)
     explanation = await generate_expert_explanation(req.keyword, req.context or "")
 
     insight = KnowledgeInsight(
@@ -64,9 +64,10 @@ async def get_expert_explanation(
 @router.get("/history")
 async def get_expert_history(
     limit: int = 20,
-    user_id: UUID = DEFAULT_USER_ID,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
+    user_id = UUID(user_id)
     insights = db.query(KnowledgeInsight).filter(
         KnowledgeInsight.user_id == user_id,
         KnowledgeInsight.source == "expert_api",

@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 
 from app.database import get_db
+from app.dependencies import get_current_user_id
 from app.models import HabitTracking, HabitLog
 
 router = APIRouter(prefix="/api/v1/habits", tags=["habits"])
@@ -81,6 +82,7 @@ class HabitStatsResponse(BaseModel):
 async def create_habit(
     request: HabitCreate,
     db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
 ):
     """
     Create a new habit to track.
@@ -88,8 +90,7 @@ async def create_habit(
     Habits can be tracked daily, weekly, or monthly.  The system
     automatically maintains streak counters.
     """
-    # TODO: Replace with real JWT auth dependency
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
+    user_id = UUID(user_id)
 
     habit = HabitTracking(
         user_id=user_id,
@@ -115,6 +116,7 @@ async def list_habits(
     limit: int = 50,
     offset: int = 0,
     db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
 ):
     """
     List tracked habits with optional filtering.
@@ -126,8 +128,7 @@ async def list_habits(
     - limit: Number of results (default 50, max 200)
     - offset: Pagination offset
     """
-    # TODO: Replace with real JWT auth dependency
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
+    user_id = UUID(user_id)
 
     query = db.query(HabitTracking).filter(HabitTracking.user_id == user_id)
 
@@ -147,14 +148,14 @@ async def log_habit_completion(
     habit_id: UUID,
     request: HabitLogCreate,
     db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
 ):
     """
     Log a habit completion (or miss) for a given date.
 
     Automatically updates the habit's current streak and longest streak.
     """
-    # TODO: Replace with real JWT auth dependency
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
+    user_id = UUID(user_id)
     log_date = request.log_date or str(date.today())
 
     # Verify habit exists and belongs to user
@@ -229,6 +230,7 @@ async def get_habit_logs(
     limit: int = 60,
     offset: int = 0,
     db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
 ):
     """
     Get habit completion logs with optional date range.
@@ -239,8 +241,7 @@ async def get_habit_logs(
     - limit: Number of results (default 60, max 365)
     - offset: Pagination offset
     """
-    # TODO: Replace with real JWT auth dependency
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
+    user_id = UUID(user_id)
 
     # Verify habit ownership
     habit = (
@@ -265,6 +266,7 @@ async def get_habit_logs(
 @router.get("/stats", response_model=List[HabitStatsResponse])
 async def get_habit_stats(
     db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
 ):
     """
     Get statistics for all active habits.
@@ -272,8 +274,7 @@ async def get_habit_stats(
     Returns per-habit stats including streaks, completion rate, and a
     summary of the last 7 days.
     """
-    # TODO: Replace with real JWT auth dependency
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
+    user_id = UUID(user_id)
 
     habits = (
         db.query(HabitTracking)

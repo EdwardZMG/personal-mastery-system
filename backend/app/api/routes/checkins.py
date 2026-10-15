@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 
 from app.database import get_db
+from app.dependencies import get_current_user_id
 from app.models import DailyCheckin
 
 router = APIRouter(prefix="/api/v1/checkins", tags=["checkins"])
@@ -47,6 +48,7 @@ class CheckinResponse(BaseModel):
 @router.post("/", response_model=CheckinResponse, status_code=status.HTTP_201_CREATED)
 async def create_checkin(
     request: CheckinCreate,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     """
@@ -56,14 +58,13 @@ async def create_checkin(
     and a plan for tomorrow.  Only one check-in per user per day is
     allowed; attempting to check in again returns a 400 error.
     """
-    # TODO: Replace with real JWT auth dependency
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
+    user_id_uuid = UUID(user_id)
     checkin_date = str(date.today())
 
     existing = (
         db.query(DailyCheckin)
         .filter(
-            DailyCheckin.user_id == user_id,
+            DailyCheckin.user_id == user_id_uuid,
             DailyCheckin.checkin_date == checkin_date,
         )
         .first()
@@ -72,7 +73,7 @@ async def create_checkin(
         raise HTTPException(status_code=400, detail="Already checked in today. Use PUT to update.")
 
     checkin = DailyCheckin(
-        user_id=user_id,
+        user_id=user_id_uuid,
         checkin_date=checkin_date,
         mood=request.mood,
         energy_level=request.energy_level,
@@ -94,6 +95,7 @@ async def list_checkins(
     end_date: Optional[str] = None,
     limit: int = 30,
     offset: int = 0,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     """
@@ -105,10 +107,7 @@ async def list_checkins(
     - limit: Number of results (default 30, max 365)
     - offset: Pagination offset
     """
-    # TODO: Replace with real JWT auth dependency
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
-
-    query = db.query(DailyCheckin).filter(DailyCheckin.user_id == user_id)
+    query = db.query(DailyCheckin).filter(DailyCheckin.user_id == UUID(user_id))
 
     if start_date:
         query = query.filter(DailyCheckin.checkin_date >= start_date)
@@ -121,6 +120,7 @@ async def list_checkins(
 
 @router.get("/today", response_model=CheckinResponse)
 async def get_today_checkin(
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     """
@@ -129,14 +129,12 @@ async def get_today_checkin(
     Returns the current user's check-in for today or 404 if not yet
     checked in.
     """
-    # TODO: Replace with real JWT auth dependency
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
     checkin_date = str(date.today())
 
     checkin = (
         db.query(DailyCheckin)
         .filter(
-            DailyCheckin.user_id == user_id,
+            DailyCheckin.user_id == UUID(user_id),
             DailyCheckin.checkin_date == checkin_date,
         )
         .first()

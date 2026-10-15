@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 
 from app.database import get_db
+from app.dependencies import get_current_user_id
 from app.models_extended import ChineseClassicsProgress
 
 router = APIRouter(prefix="/api/v1/classics", tags=["classics"])
@@ -85,6 +86,7 @@ async def get_all_classics_progress(
     limit: int = 100,
     offset: int = 0,
     db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
 ):
     """
     Get learning progress for all Chinese classics.
@@ -94,8 +96,7 @@ async def get_all_classics_progress(
     - limit: Number of results (default 100, max 500)
     - offset: Pagination offset
     """
-    # TODO: Replace with real JWT auth dependency
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
+    user_id = UUID(user_id)
 
     query = db.query(ChineseClassicsProgress).filter(
         ChineseClassicsProgress.user_id == user_id
@@ -112,14 +113,14 @@ async def get_all_classics_progress(
 async def get_classic_progress(
     classic_name: str,
     db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
 ):
     """
     Get progress for a specific classic.
 
     Returns all chapter-level progress records for the given classic.
     """
-    # TODO: Replace with real JWT auth dependency
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
+    user_id = UUID(user_id)
 
     records = (
         db.query(ChineseClassicsProgress)
@@ -140,6 +141,7 @@ async def get_classic_progress(
 async def update_classics_progress(
     request: ClassicsProgressUpdate,
     db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
 ):
     """
     Create or update learning progress for a classic chapter.
@@ -147,8 +149,7 @@ async def update_classics_progress(
     Uses upsert logic: if a record exists for the same user + classic +
     chapter_number it is updated; otherwise a new record is created.
     """
-    # TODO: Replace with real JWT auth dependency
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
+    user_id = UUID(user_id)
 
     # Look for existing record
     existing = None
@@ -223,6 +224,7 @@ async def update_classics_progress(
 @router.get("/stats", response_model=ClassicsOverallStats)
 async def get_classics_stats(
     db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
 ):
     """
     Get overall statistics for Chinese classics learning.
@@ -230,8 +232,7 @@ async def get_classics_stats(
     Returns a summary across all classics including total chapters
     studied, average mastery, and per-classic breakdowns.
     """
-    # TODO: Replace with real JWT auth dependency
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
+    user_id = UUID(user_id)
 
     all_records = (
         db.query(ChineseClassicsProgress)

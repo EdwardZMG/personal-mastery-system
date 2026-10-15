@@ -13,11 +13,10 @@ from sqlalchemy import and_
 from pydantic import BaseModel, Field
 
 from app.database import get_db
+from app.dependencies import get_current_user_id
 from app.models_extended import ReviewCard, StructuredKnowledge, KnowledgeInsight
 
 router = APIRouter(prefix="/api/v1/spaced-repetition", tags=["spaced-repetition"])
-
-DEFAULT_USER_ID = UUID("00000000-0000-0000-0000-000000000001")
 
 EBBINGHAUS_INTERVALS = [1, 2, 4, 7, 15, 30]
 
@@ -109,9 +108,10 @@ def is_card_due(card: ReviewCard) -> bool:
 @router.get("/due", response_model=List[CardResponse])
 async def get_due_cards(
     max_cards: int = 20,
-    user_id: UUID = DEFAULT_USER_ID,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
+    user_id = UUID(user_id)
     today_str = date.today().isoformat()
     cards = db.query(ReviewCard).filter(
         ReviewCard.user_id == user_id,
@@ -133,9 +133,10 @@ async def get_due_cards(
 @router.get("/cards", response_model=List[CardResponse])
 async def get_all_cards(
     card_type: Optional[str] = None,
-    user_id: UUID = DEFAULT_USER_ID,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
+    user_id = UUID(user_id)
     query = db.query(ReviewCard).filter(
         ReviewCard.user_id == user_id,
         ReviewCard.is_active == True,
@@ -158,9 +159,10 @@ async def get_all_cards(
 @router.post("/cards", response_model=CardResponse, status_code=status.HTTP_201_CREATED)
 async def create_card(
     req: CardCreate,
-    user_id: UUID = DEFAULT_USER_ID,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
+    user_id = UUID(user_id)
     knowledge = db.query(StructuredKnowledge).filter(
         StructuredKnowledge.id == req.knowledge_id).first()
     if not knowledge:
@@ -192,9 +194,10 @@ async def create_card(
 @router.post("/session/start", response_model=List[CardResponse])
 async def start_review_session(
     req: ReviewSessionRequest,
-    user_id: UUID = DEFAULT_USER_ID,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
+    user_id = UUID(user_id)
     if req.card_ids:
         cards = db.query(ReviewCard).filter(
             ReviewCard.id.in_(req.card_ids),
@@ -223,9 +226,10 @@ async def start_review_session(
 @router.post("/session/answer", response_model=ReviewResult)
 async def answer_card(
     req: ReviewAnswer,
-    user_id: UUID = DEFAULT_USER_ID,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
+    user_id = UUID(user_id)
     card = db.query(ReviewCard).filter(
         ReviewCard.id == req.card_id,
         ReviewCard.user_id == user_id).first()
@@ -267,9 +271,10 @@ async def answer_card(
 @router.post("/session/complete", response_model=SessionStats)
 async def complete_session(
     results: List[ReviewAnswer],
-    user_id: UUID = DEFAULT_USER_ID,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
+    user_id = UUID(user_id)
     total = len(results)
     correct = sum(1 for r in results if r.quality >= 3)
     accuracy = correct / total if total > 0 else 0.0
@@ -318,7 +323,8 @@ async def complete_session(
 
 
 @router.get("/stats")
-async def get_review_stats(user_id: UUID = DEFAULT_USER_ID, db: Session = Depends(get_db)):
+async def get_review_stats(user_id: str = Depends(get_current_user_id), db: Session = Depends(get_db)):
+    user_id = UUID(user_id)
     total_cards = db.query(ReviewCard).filter(
         ReviewCard.user_id == user_id, ReviewCard.is_active == True).count()
 
@@ -359,9 +365,10 @@ async def get_review_stats(user_id: UUID = DEFAULT_USER_ID, db: Session = Depend
 
 @router.post("/cards/generate-from-knowledge")
 async def generate_cards_from_knowledge(
-    user_id: UUID = DEFAULT_USER_ID,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
+    user_id = UUID(user_id)
     knowledge_items = db.query(StructuredKnowledge).join(
         KnowledgeInsight, StructuredKnowledge.insight_id == KnowledgeInsight.id
     ).filter(KnowledgeInsight.user_id == user_id).all()
@@ -399,7 +406,8 @@ async def generate_cards_from_knowledge(
 
 
 @router.delete("/cards/{card_id}")
-async def delete_card(card_id: UUID, user_id: UUID = DEFAULT_USER_ID, db: Session = Depends(get_db)):
+async def delete_card(card_id: UUID, user_id: str = Depends(get_current_user_id), db: Session = Depends(get_db)):
+    user_id = UUID(user_id)
     card = db.query(ReviewCard).filter(
         ReviewCard.id == card_id,
         ReviewCard.user_id == user_id).first()

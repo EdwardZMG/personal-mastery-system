@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.dependencies import get_current_user_id
 from app.models_extended import SpeechDraft, BilingualSpeech, SpeechMaterial
 from pydantic import BaseModel, Field
 
@@ -80,6 +81,7 @@ class SpeechMaterialResponse(BaseModel):
 @router.post("/generate", response_model=SpeechDraftResponse, status_code=status.HTTP_201_CREATED)
 async def generate_speech(
     request: SpeechGenerateRequest,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
     """
@@ -138,7 +140,7 @@ async def generate_speech(
     
     # Create speech draft
     speech = SpeechDraft(
-        user_id=UUID("00000000-0000-0000-0000-000000000001"),  # TODO: Get from JWT auth
+        user_id=UUID(user_id),
         topic=request.topic,
         template_type=request.template_type,
         estimated_duration=template["duration"],
@@ -254,6 +256,7 @@ async def list_speeches(
     status_filter: Optional[str] = None,
     limit: int = 20,
     offset: int = 0,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
     """
@@ -282,6 +285,7 @@ async def search_materials(
     domain: Optional[str] = None,
     material_type: Optional[str] = None,
     limit: int = 10,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
     """
@@ -319,6 +323,7 @@ async def add_speech_material(
     source_url: Optional[str] = None,
     domain: Optional[str] = None,
     tags: Optional[List[str]] = None,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
     """
@@ -334,7 +339,7 @@ async def add_speech_material(
     These materials are indexed and can be searched when generating speeches.
     """
     material = SpeechMaterial(
-        user_id=UUID("00000000-0000-0000-0000-000000000001"),  # TODO: Get from JWT auth
+        user_id=UUID(user_id),
         title=title,
         material_type=material_type,
         content=content,
@@ -354,6 +359,7 @@ async def add_speech_material(
 @router.get("/bilingual/{speech_id}", response_model=BilingualSpeechResponse)
 async def get_bilingual_speech(
     speech_id: UUID,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
     """
@@ -376,6 +382,7 @@ async def get_bilingual_speech(
 @router.get("/{speech_id}", response_model=SpeechDraftResponse)
 async def get_speech_draft(
     speech_id: UUID,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
     """Get a specific speech draft by ID"""

@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 
 from app.database import get_db
+from app.dependencies import get_current_user_id
 from app.models import User, UserProfile
 from app.core.security import (
     create_access_token,
@@ -179,6 +180,7 @@ async def refresh_token(
 
 @router.get("/me", response_model=dict)
 async def get_current_user(
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     """
@@ -187,14 +189,13 @@ async def get_current_user(
     Returns both the User record and the associated UserProfile with
     MASK / Maslow / expertise scores.
     """
-    # TODO: Replace with real JWT auth dependency
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
+    user_uuid = UUID(user_id)
 
-    user = db.query(User).filter(User.user_id == user_id).first()
+    user = db.query(User).filter(User.user_id == user_uuid).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    profile = db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
+    profile = db.query(UserProfile).filter(UserProfile.user_id == user_uuid).first()
 
     return {
         "user": {
@@ -223,6 +224,7 @@ async def get_current_user(
 @router.put("/me", response_model=dict)
 async def update_user_profile(
     request: UpdateProfileRequest,
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     """
@@ -230,10 +232,9 @@ async def update_user_profile(
 
     Accepts partial updates -- only provided fields are changed.
     """
-    # TODO: Replace with real JWT auth dependency
-    user_id = UUID("00000000-0000-0000-0000-000000000001")
+    user_uuid = UUID(user_id)
 
-    user = db.query(User).filter(User.user_id == user_id).first()
+    user = db.query(User).filter(User.user_id == user_uuid).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -248,9 +249,9 @@ async def update_user_profile(
         user.phone = request.phone
 
     # Update UserProfile fields
-    profile = db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
+    profile = db.query(UserProfile).filter(UserProfile.user_id == user_uuid).first()
     if not profile:
-        profile = UserProfile(user_id=user_id)
+        profile = UserProfile(user_id=user_uuid)
         db.add(profile)
 
     if request.bio is not None:
